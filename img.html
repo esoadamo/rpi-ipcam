@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IMG</title>
+    <title>RPi Cam</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body, html {
@@ -11,6 +11,7 @@
             margin: 0;
             padding: 0;
             background: #000;
+            overflow: hidden;
         }
 
         body {
@@ -20,12 +21,41 @@
         }
 
         img {
-            width: calc(100% - 4px);
-            height: calc(100% - 4px);
+            max-width: calc(100vw - 4px);
+            max-height: calc(100vh - 4px);
+            width: auto;
+            height: auto;
+        }
+
+        .controls {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+        }
+
+        .button {
+            color: white;
+            background: darkgray;
+            opacity: 0.5;
+            width: 48px;
+            height: 48px;
+            font-size: 32px;
+            font-weight: bold;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            cursor: pointer;
+            margin: 4px;
         }
     </style>
 </head>
 <body>
+<div class="controls">
+    <div class="button" id="btn-rotate"><span>&#x21BA;</span></div>
+    <span class="button">X</span>
+</div>
 <script>
     const img = document.createElement('img');
     document.body.append(img);
@@ -34,6 +64,28 @@
         img.src = `/cam/img/low.jpg?${Date.now()}`;
     }
 
+    function initRotation() {
+        const btn = document.getElementById('btn-rotate');
+        let rotation = localStorage.getItem('rpicam/rotation') || 0;
+
+        function applyRotation() {
+            const {style} = img;
+            style.transform = `rotate(${rotation}deg)`;
+            if (rotation % 180 === 0) {
+                style.maxHeight = 'calc(100vw - 4px)';
+                style.maxWidth = 'calc(100vh - 4px)';
+            }
+        }
+
+        btn.onclick = () => {
+            rotation = (rotation + 90) % 360;
+            localStorage.setItem('rpicam/rotation', rotation);
+            applyRotation();
+        };
+        applyRotation();
+    }
+
+    initRotation();
     img.onload = () => loadImg();
     loadImg();
 </script>
