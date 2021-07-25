@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body, html {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: #000;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-content: center;
+        }
+
+        img {
+            width: calc(100% - 4px);
+            height: calc(100% - 4px);
+        }
+    </style>
+</head>
+<body>
+<script>
+    const img = document.createElement('img');
+    document.body.append(img);
+
+    function loadImg() {
+        img.src = `/cam/img/low.jpg?${Date.now()}`;
+    }
+
+    img.onload = () => loadImg();
+    loadImg();
+</script>
+</body>
+</html>
