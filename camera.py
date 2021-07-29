@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterator, Union
 from pathlib import Path
 from tempfile import mkstemp
 from os import close
@@ -10,11 +10,36 @@ from picamera import PiCamera
 
 
 class CameraBufferAble:
-    def __init__(self):
+    def __init__(self, max_size: Optional[int] = None):
+        self.__buff = bytearray()
+        self.__max_size = max_size
+        self.__curr_size = 0
+        self.__lock = Lock()
         self._camera: Optional[PiCamera] = None
 
-    def write(self, b: bytes) -> None:
-        pass
+    def write(self, b: Union[bytes, bytearray]) -> int:
+        available_size = min(self.__max_size - len(self.__buff), len(b)) if self.__max_size is not None else len(b)
+        if available_size > 0:
+            with self.__lock:
+                self.__buff.extend(b[:available_size])
+            return available_size
+        return 0
+
+    def read(self, size: Optional[int] = None) -> bytearray:
+        if not self.__buff:
+            return bytearray()
+        with self.__lock:
+            size = min(size if size is not None else len(self.__buff), len(self.__buff))
+            r = self.__buff[:size]
+            self.__buff = self.__buff[size:]
+            return r
+
+    def stream(self) -> Iterator[bytes]:
+        try:
+            while True:
+                yield bytes(self.read())
+        finally:
+            self.stop()
 
     def stop(self) -> None:
         if self._camera is not None:

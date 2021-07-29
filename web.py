@@ -1,5 +1,5 @@
-from flask import Flask, send_from_directory
-from camera import Camera
+from flask import Flask, send_from_directory, Response
+from camera import Camera, CameraBufferAble
 from pathlib import Path
 
 app = Flask(__name__)
@@ -21,8 +21,9 @@ def web_img_jpg_low():
 
 @app.route('/cam/vid.h264')
 def web_vid_h264():
-    file = camera.get_video(auto_delete=True)
-    return send_from_directory(file.parent, file.name, mimetype="video/h264")
+    buffer = CameraBufferAble(16 * 1024**2)
+    camera.start_stream(buffer)
+    return Response(buffer.stream(), content_type="application/octet-stream")
 
 
 @app.route('/cam/img')
