@@ -22,7 +22,7 @@ def web_img_jpg_low():
 @app.route('/cam/vid.h264')
 def web_vid_h264():
     buffer = CameraBufferAble(16 * 1024**2)
-    camera.start_stream(buffer)
+    buffer.start(camera)
     return Response(buffer.stream(), content_type="application/octet-stream")
 
 

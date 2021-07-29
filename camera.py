@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import mkstemp
 from os import close
 from time import time, sleep
-from threading import Thread, Lock
+from threading import Thread, Lock, Event
 
 # noinspection PyUnresolvedReferences
 from picamera import PiCamera
@@ -15,6 +15,7 @@ class CameraBufferAble:
         self.__max_size = max_size
         self.__curr_size = 0
         self.__lock = Lock()
+        self.__signal_write = Event()
         self._camera: Optional[PiCamera] = None
 
     def write(self, b: Union[bytes, bytearray]) -> int:
@@ -22,17 +23,31 @@ class CameraBufferAble:
         if available_size > 0:
             with self.__lock:
                 self.__buff.extend(b[:available_size])
+            self.__signal_write.set()
             return available_size
         return 0
 
     def read(self, size: Optional[int] = None) -> bytearray:
-        if not self.__buff:
-            return bytearray()
+        self.__wait_readable()
         with self.__lock:
             size = min(size if size is not None else len(self.__buff), len(self.__buff))
             r = self.__buff[:size]
             self.__buff = self.__buff[size:]
             return r
+
+    def __wait_readable(self) -> None:
+        lock_acquired_here = False
+        try:
+            self.__lock.acquire()
+            lock_acquired_here = True
+            if not self.__buff:
+                self.__lock.release()
+                lock_acquired_here = False
+                self.__signal_write.wait()
+                self.__signal_write.clear()
+        finally:
+            if lock_acquired_here:
+                self.__lock.release()
 
     def stream(self) -> Iterator[bytes]:
         try:
@@ -41,9 +56,13 @@ class CameraBufferAble:
         finally:
             self.stop()
 
+    def start(self, camera: "Camera") -> None:
+        return camera.start_stream(self)
+
     def stop(self) -> None:
         if self._camera is not None:
             self._camera.stop_recording()
+        self.__buff.clear()
 
 
 class Camera:
