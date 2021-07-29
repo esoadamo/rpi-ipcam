@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>RPi Cam</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--suppress CssUnusedSymbol -->
     <style>
         body, html {
             height: 100%;
@@ -20,11 +21,12 @@
             align-content: center;
         }
 
-        img {
+        canvas {
             max-width: calc(100vw - 4px);
             max-height: calc(100vh - 4px);
             width: auto;
             height: auto;
+            border: 2px solid black;
         }
 
         .controls {
@@ -49,27 +51,84 @@
             cursor: pointer;
             margin: 4px;
         }
+
+        .button.active {
+            background: darkolivegreen;
+        }
     </style>
 </head>
 <body>
 <div class="controls">
     <div class="button" id="btn-rotate"><span>&#x21BA;</span></div>
-    <span class="button">X</span>
+    <span class="button" id="btn-infrared"><span>&#9789;</span></span>
 </div>
+<canvas id="canvas"></canvas>
 <script>
+    /**
+     * @type {HTMLImageElement}
+     */
     const img = document.createElement('img');
-    document.body.append(img);
+    /**
+     * @type {HTMLCanvasElement}
+     */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let infraredFilterEnabled = false;
 
     function loadImg() {
-        img.src = `/cam/img/low.jpg?${Date.now()}`;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+
+        if (infraredFilterEnabled && canvas.width > 0 && canvas.height > 0) {
+            const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = [...originalImageData.data];
+
+            class Mean {
+                constructor() {
+                    this.val = 0;
+                    this.n = 0;
+                }
+
+                add(value) {
+                    this.val = ((this.val * this.n) + value) / (this.n + 1);
+                    this.n ++;
+                }
+            }
+
+            const means = [new Mean(), new Mean(), new Mean()];
+
+            for (let c = 0; c < 3; c++) {
+                for (let i = c; i < data.length; i+= 4) {
+                    means[c].add(data[i]);
+                }
+            }
+
+            const coefficients = means.map((mean) => 128 / mean.val);
+            for (let c = 0; c < 3; c++) {
+                for (let i = c; i < data.length; i+= 4) {
+                    data[i] = Math.floor(data[i] * coefficients[c]);
+                }
+            }
+
+            ctx.putImageData(new ImageData(new Uint8ClampedArray(data),
+                originalImageData.width, originalImageData.height), 0, 0);
+        }
+
+        refreshImg();
+    }
+
+    function refreshImg() {
+        setTimeout(() => img.src = `/cam/img/low.jpg?${Date.now()}`, Math.random() * 2000);
     }
 
     function initRotation() {
         const btn = document.getElementById('btn-rotate');
-        let rotation = localStorage.getItem('rpicam/rotation') || 0;
+        let rotation = Number(localStorage.getItem('rpicam/rotation') || 0);
 
         function applyRotation() {
-            const {style} = img;
+            const {style} = canvas;
             style.transform = `rotate(${rotation}deg)`;
             if (rotation % 180 === 0) {
                 style.maxHeight = 'calc(100vw - 4px)';
@@ -85,8 +144,28 @@
         applyRotation();
     }
 
+    function initInfrared() {
+        const btn = document.getElementById('btn-infrared');
+        infraredFilterEnabled = Boolean(Number(localStorage.getItem('rpicam/infrared') || 0));
+        if (infraredFilterEnabled) {
+            btn.classList.add('active');
+        }
+
+        btn.onclick = () => {
+            infraredFilterEnabled = !infraredFilterEnabled;
+            localStorage.setItem('rpicam/infrared', `${Number(infraredFilterEnabled)}`);
+            if (infraredFilterEnabled) {
+                btn.classList.add('active');
+            } else if (btn.classList.contains('active')) {
+                btn.classList.remove('active');
+            }
+        };
+    }
+
     initRotation();
+    initInfrared();
     img.onload = () => loadImg();
+    img.onerror = () => refreshImg();
     loadImg();
 </script>
 </body>
