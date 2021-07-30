@@ -33,6 +33,7 @@
             position: fixed;
             top: 8px;
             right: 8px;
+            z-index: 10;
         }
 
         .button {
@@ -179,12 +180,32 @@
         };
     }
 
+    function initLoading() {
+        const initialText = 'Loading';
+        ctx.font = '25px monotype';
+        const textSize = ctx.measureText(initialText);
+        console.log('measured', textSize);
+        canvas.width = Math.ceil(textSize.width) / 2;
+        canvas.height = 25;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'white';
+        ctx.strokeText(initialText, 0, canvas.height / 2);
+
+        img.onload = () => loadImg();
+        img.onerror = () => {
+            ctx.font = '25px sans-serif';
+            ctx.strokeStyle = 'white';
+            ctx.strokeText('Error', 0, canvas.height / 2, canvas.width);
+            refreshImg();
+        };
+        refreshImg();
+    }
+
     initRotation();
     initInfrared();
     initDownload();
-    img.onload = () => loadImg();
-    img.onerror = () => refreshImg();
-    loadImg();
+    initLoading();
 </script>
 </body>
 </html>
