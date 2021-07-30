@@ -7,7 +7,7 @@ camera = Camera()
 script_dir = Path(__file__).parent.absolute()
 
 
-@app.route('/cam/img.jpg')
+@app.route('/cam/img/full.jpg')
 def web_img_jpg():
     file = camera.get_image(auto_delete=True)
     return send_from_directory(file.parent, file.name)

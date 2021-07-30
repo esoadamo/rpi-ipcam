@@ -61,6 +61,7 @@
 <div class="controls">
     <div class="button" id="btn-rotate"><span>&#x21BA;</span></div>
     <span class="button" id="btn-infrared"><span>&#9789;</span></span>
+    <span class="button" id="btn-download"><span>&#x1f4be;</span></span>
 </div>
 <canvas id="canvas"></canvas>
 <script>
@@ -162,8 +163,25 @@
         };
     }
 
+    function initDownload() {
+        const btn = document.getElementById('btn-download');
+        btn.onclick = () => {
+            const a = document.createElement("a");
+            a.download = `rpicam-${Date.now()}.jpg`;
+            a.href = `/cam/img/full.jpg?${Date.now()}`;
+            a.click();
+            btn.classList.add('active');
+            setTimeout(() => {
+                if (btn.classList.contains('active')) {
+                    btn.classList.remove('active');
+                }
+            }, 500);
+        };
+    }
+
     initRotation();
     initInfrared();
+    initDownload();
     img.onload = () => loadImg();
     img.onerror = () => refreshImg();
     loadImg();
