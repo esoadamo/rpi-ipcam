@@ -56,6 +56,16 @@
         .button.active {
             background: darkolivegreen;
         }
+
+        #time {
+            position: fixed;
+            z-index: 5;
+            font-size: 24px;
+            left: 4px;
+            bottom: 4px;
+            color: white;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -64,6 +74,7 @@
     <span class="button" id="btn-infrared"><span>&#9789;</span></span>
     <span class="button" id="btn-download"><span>&#x1f4be;</span></span>
 </div>
+<span id="time"></span>
 <canvas id="canvas"></canvas>
 <script>
     /**
@@ -75,6 +86,8 @@
      */
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+
+    const time = document.getElementById('time');
 
     let infraredFilterEnabled = false;
 
@@ -117,6 +130,9 @@
             ctx.putImageData(new ImageData(new Uint8ClampedArray(data),
                 originalImageData.width, originalImageData.height), 0, 0);
         }
+        const now = new Date();
+        time.textContent = `${now.getDay()}. ${now.getMonth()}. ${now.getFullYear()}
+         ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
 
         refreshImg();
     }
@@ -184,7 +200,6 @@
         const initialText = 'Loading';
         ctx.font = '25px monotype';
         const textSize = ctx.measureText(initialText);
-        console.log('measured', textSize);
         canvas.width = Math.ceil(textSize.width) / 2;
         canvas.height = 25;
         ctx.fillStyle = 'black';
